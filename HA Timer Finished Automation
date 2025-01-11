@@ -1,0 +1,23 @@
+alias: "WLED: Timer finished"
+description: ""
+triggers:
+  - trigger: numeric_state
+    entity_id:
+      - input_number.timer_remaining
+    below: 1
+conditions: []
+actions:
+  - device_id: 002347c12109cf6738eeeef766c2bb2c
+    domain: select
+    entity_id: d8b5331c4b32a0fae09657c47e140a2a
+    type: select_option
+    option: Freqwave
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+  - type: turn_off
+    device_id: 002347c12109cf6738eeeef766c2bb2c
+    entity_id: 56497e1509cc841d1a8abbcdb607e3e4
+    domain: light
+mode: restart
