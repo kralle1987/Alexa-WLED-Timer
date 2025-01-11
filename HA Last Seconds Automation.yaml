@@ -5,26 +5,8 @@ triggers:
     entity_id:
       - input_number.timer_remaining
     below: 11
-conditions:
-  - type: is_connected
-    condition: device
-    device_id: 1c7dbb3ab4e522e199d590cfa2f4d11e
-    entity_id: 2d0063e032cabca93e721fb58af1a196
-    domain: binary_sensor
-    enabled: false
-  - type: is_connected
-    condition: device
-    device_id: 8c57e5d51eaa9fc6202e717e0e5dbcc5
-    entity_id: 90f87a08b92ba9ddc79cf2f1ddba9501
-    domain: binary_sensor
-    enabled: false
+conditions: []
 actions:
-  - action: automation.turn_off
-    metadata: {}
-    data:
-      stop_actions: true
-    target:
-      entity_id: automation.test_timer_zahler
   - action: input_number.set_value
     metadata: {}
     data:
