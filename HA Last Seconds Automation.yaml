@@ -1,0 +1,119 @@
+alias: WLED - Timer last seconds
+description: ""
+triggers:
+  - trigger: numeric_state
+    entity_id:
+      - input_number.timer_remaining
+    below: 11
+conditions:
+  - type: is_connected
+    condition: device
+    device_id: 1c7dbb3ab4e522e199d590cfa2f4d11e
+    entity_id: 2d0063e032cabca93e721fb58af1a196
+    domain: binary_sensor
+    enabled: false
+  - type: is_connected
+    condition: device
+    device_id: 8c57e5d51eaa9fc6202e717e0e5dbcc5
+    entity_id: 90f87a08b92ba9ddc79cf2f1ddba9501
+    domain: binary_sensor
+    enabled: false
+actions:
+  - action: automation.turn_off
+    metadata: {}
+    data:
+      stop_actions: true
+    target:
+      entity_id: automation.test_timer_zahler
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 1
+    target:
+      entity_id:
+        - input_number.timer_leds
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 10
+    target:
+      entity_id: input_number.timer_starter
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 0
+    target:
+      entity_id: input_number.red
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 255
+    target:
+      entity_id:
+        - input_number.green
+  - type: turn_on
+    device_id: 002347c12109cf6738eeeef766c2bb2c
+    entity_id: 56497e1509cc841d1a8abbcdb607e3e4
+    domain: light
+  - repeat:
+      sequence:
+        - sequence:
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_remaining
+              data:
+                value: >
+                  {% set next_timer = states('sensor.echo_show_next_timer') %}
+                  {% if next_timer != 'unavailable' %}
+                    {% set next_time = strptime(next_timer, '%Y-%m-%dT%H:%M:%S%z') %}
+                    {% set now = utcnow() %}
+                    {% set diff = next_time - now %}
+                    {{ diff.total_seconds() | int }}
+                  {% else %}
+                    0
+                  {% endif %}
+              enabled: true
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_progress
+              data:
+                value: >
+                  {% set remaining_time = states('input_number.timer_remaining')
+                  | int %} {% set total_time =
+                  states('input_number.timer_starter') | int %}
+                        {% if total_time > 0 %}
+                          {% set percentage = ((total_time - remaining_time) / total_time) * 100 %}
+                          {{ percentage | round(0) }}
+                        {% else %}
+                          0
+                        {% endif %}
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_leds
+              data:
+                value: >
+                  {% set timer_progress = states('input_number.timer_progress')
+                  | float(0) %}
+                        {% set total_leds = 28 %}
+                        {% set leds_on = (timer_progress / 100) * total_leds %}
+                        {{ leds_on | int }}
+            - action: rest_command.set_leds_segment
+              data:
+                led_count: "{{ states('input_number.timer_leds') | int }}"
+                red: "{{ states('input_number.red') | int }}"
+                green: "{{ states('input_number.green') | int }}"
+                blue: "{{ states('input_number.blue') | int }}"
+                white: "{{ states('input_number.white') | int }}"
+      until:
+        - condition: numeric_state
+          entity_id: input_number.timer_progress
+          above: 99
+  - action: automation.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: automation.test_timer_zahler
+mode: restart
