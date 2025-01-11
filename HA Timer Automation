@@ -1,0 +1,139 @@
+alias: WLED - Timer
+description: ""
+triggers:
+  - trigger: state
+    entity_id:
+      - sensor.echo_show_next_timer
+    to: null
+    from: unknown
+conditions:
+  - condition: time
+    after: "08:00:00"
+    before: "22:00:00"
+actions:
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 1
+    target:
+      entity_id: input_number.timer_leds
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 0
+    target:
+      entity_id: input_number.timer_progress
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 255
+    target:
+      entity_id: input_number.red
+    enabled: true
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 0
+    target:
+      entity_id:
+        - input_number.green
+    enabled: true
+  - device_id: 002347c12109cf6738eeeef766c2bb2c
+    domain: select
+    entity_id: d8b5331c4b32a0fae09657c47e140a2a
+    type: select_option
+    option: Solid Red
+    enabled: true
+  - action: rest_command.set_leds_segment
+    data:
+      led_count: "{{ states('input_number.timer_leds') | int }}"
+      red: "{{ states('input_number.red') | int }}"
+      green: "{{ states('input_number.green') | int }}"
+      blue: "{{ states('input_number.blue') | int }}"
+      white: "{{ states('input_number.white') | int }}"
+  - action: input_number.set_value
+    metadata: {}
+    target:
+      entity_id: input_number.timer_starter
+    data:
+      value: >
+        {% set next_timer = states('sensor.echo_show_next_timer') %} {% if
+        next_timer != 'unavailable' %}
+          {% set next_time = strptime(next_timer, '%Y-%m-%dT%H:%M:%S%z') %}
+          {% set now = utcnow() %}
+          {% set diff = next_time - now %}
+          {{ diff.total_seconds() | int }}
+        {% else %}
+          0
+        {% endif %}
+  - type: turn_on
+    device_id: 002347c12109cf6738eeeef766c2bb2c
+    entity_id: 56497e1509cc841d1a8abbcdb607e3e4
+    domain: light
+  - repeat:
+      sequence:
+        - sequence:
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_remaining
+              data:
+                value: >
+                  {% set next_timer = states('sensor.echo_show_next_timer') %}
+                  {% if next_timer != 'unavailable' %}
+                    {% set next_time = strptime(next_timer, '%Y-%m-%dT%H:%M:%S%z') %}
+                    {% set now = utcnow() %}
+                    {% set diff = next_time - now %}
+                    {{ diff.total_seconds() | int }}
+                  {% else %}
+                    0
+                  {% endif %}
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_remaining_offset
+              data:
+                value: "{{ (states('input_number.timer_remaining') | int) - 10 }}"
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_progress
+              data:
+                value: >
+                  {% set remaining_time =
+                  states('input_number.timer_remaining_offset') | int %} {% set
+                  total_time = states('input_number.timer_starter') | int %}
+                        {% if total_time > 0 %}
+                          {% set percentage = ((total_time - remaining_time) / total_time) * 100 %}
+                          {{ percentage | round(0) }}
+                        {% else %}
+                          0
+                        {% endif %}
+            - action: input_number.set_value
+              metadata: {}
+              target:
+                entity_id: input_number.timer_leds
+              data:
+                value: >
+                  {% set timer_progress = states('input_number.timer_progress')
+                  | float(0) %}
+                        {% set total_leds = 28 %}
+                        {% set leds_on = (timer_progress / 100) * total_leds %}
+                        {{ leds_on | int }}
+            - delay:
+                hours: 0
+                minutes: 0
+                seconds: 1
+              enabled: true
+            - action: rest_command.set_leds_segment
+              data:
+                led_count: "{{ states('input_number.timer_leds') | int }}"
+                red: "{{ states('input_number.red') | int }}"
+                green: "{{ states('input_number.green') | int }}"
+                blue: "{{ states('input_number.blue') | int }}"
+                white: "{{ states('input_number.white') | int }}"
+      until:
+        - condition: numeric_state
+          entity_id: input_number.timer_remaining_offset
+          below: 1
+mode: restart
