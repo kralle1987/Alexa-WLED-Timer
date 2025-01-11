@@ -1,0 +1,47 @@
+rest_command:
+  set_leds_segment:
+    url: "http://192.168.177.76/json/state"
+    method: post
+    headers:
+      Content-Type: application/json
+    payload: >
+      {
+        "seg": [
+          {
+            "id": 0,
+            "start": 0,
+            "stop": {{ led_count }},
+            "col": [[{{ red }}, {{ green }}, {{ blue }}, {{ white }}]]
+          }
+        ]
+      }
+      
+      
+input_number:
+  red:
+    name: Red
+    initial: 255
+    min: 0
+    max: 255
+    step: 1
+
+  green:
+    name: Green
+    initial: 0
+    min: 0
+    max: 255
+    step: 1
+
+  blue:
+    name: Blue
+    initial: 0
+    min: 0
+    max: 255
+    step: 1
+
+  white:
+    name: White
+    initial: 0
+    min: 0
+    max: 255
+    step: 1
